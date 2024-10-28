@@ -1,14 +1,14 @@
-#include <TinyWireM.h>
+#include <Wire.h>
 #include <U8g2lib.h>
 
 // Impostazioni del display
-U8G2_SH1106_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ PB2, /* data=*/ PB0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* clock=*/ SCL, /* data=*/ SDA, /* reset=*/ U8X8_PIN_NONE);
 
 // Definizione dei pin dei pulsanti e del LED
-const int buttonPinPlus = PB3;
-const int buttonPinMinus = PB4;
-const int buttonPinStart = PB1;
-const int ledPin = PB1; // Cambia questo pin a seconda del tuo layout
+const int buttonPinPlus = 2;
+const int buttonPinMinus = 3;
+const int buttonPinStart = 4;
+const int ledPin = 13; // Pin LED (può essere cambiato)
 
 // Variabili timer
 int timerValue = 0;
