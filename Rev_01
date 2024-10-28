@@ -1,0 +1,91 @@
+#include <TinyWireM.h>
+#include <U8g2lib.h>
+
+// Impostazioni del display
+U8G2_SH1106_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ PB2, /* data=*/ PB0, /* reset=*/ U8X8_PIN_NONE);
+
+// Definizione dei pin dei pulsanti e del LED
+const int buttonPinPlus = PB3;
+const int buttonPinMinus = PB4;
+const int buttonPinStart = PB1;
+const int ledPin = PB1; // Cambia questo pin a seconda del tuo layout
+
+// Variabili timer
+int timerValue = 0;
+bool timerRunning = false;
+unsigned long previousMillis = 0;
+const long interval = 1000; // Intervallo di 1 secondo
+unsigned long ledOnTime = 0; // Tempo in cui il LED è stato acceso
+
+// Variabili di debounce per il pulsante Start
+bool lastButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+const long debounceDelay = 50; // Ridurre il tempo di debounce
+
+void setup() {
+  pinMode(buttonPinPlus, INPUT_PULLUP);
+  pinMode(buttonPinMinus, INPUT_PULLUP);
+  pinMode(buttonPinStart, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+
+  u8g2.begin();
+  u8g2.clearBuffer();
+}
+
+void loop() {
+  if (digitalRead(buttonPinPlus) == LOW) {
+    timerValue++;
+    delay(200); // Debounce del pulsante
+  }
+
+  if (digitalRead(buttonPinMinus) == LOW) {
+    timerValue--;
+    if (timerValue < 0) timerValue = 0;
+    delay(200); // Debounce del pulsante
+  }
+
+  // Gestione del pulsante Start con debounce ottimizzato
+  bool reading = digitalRead(buttonPinStart);
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading == LOW) {
+      timerRunning = !timerRunning;
+      previousMillis = millis();
+    }
+  }
+
+  lastButtonState = reading;
+
+  if (timerRunning && timerValue > 0) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      timerValue--;
+    }
+  }
+
+  if (timerValue == 0 && timerRunning) {
+    digitalWrite(ledPin, HIGH); // Accendi il LED
+    ledOnTime = millis(); // Salva il tempo in cui il LED è stato acceso
+    timerRunning = false; // Ferma il timer
+  }
+
+  if (millis() - ledOnTime >= 5000) { // Controlla se sono passati 5 secondi
+    digitalWrite(ledPin, LOW); // Spegni il LED
+  }
+
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_ncenB24_tr); // Font più grande
+
+  char buffer[10];
+  sprintf(buffer, "%d", timerValue);
+  
+  // Calcola la posizione x per centrare il testo
+  int16_t x = (128 - u8g2.getStrWidth(buffer)) / 2;
+
+  u8g2.drawStr(x, 30, buffer);
+  u8g2.sendBuffer();
+}
